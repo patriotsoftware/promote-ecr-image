@@ -30,7 +30,7 @@ runs:
       with:
         aws-access-key-id: ${{ inputs.source-aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.source-aws-secret-access-key }}
-        aws-region: us-east-1
+        aws-region: ${{ inputs.aws-region }}
 
     - name: Login to Source AWS ECR
       id: login-source-ecr
@@ -46,7 +46,7 @@ runs:
       with:
         aws-access-key-id: ${{ inputs.destination-aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.destination-aws-secret-access-key }}
-        aws-region: us-east-1
+        aws-region: ${{ inputs.aws-region }}
 
     - name: Login to Destination AWS ECR
       id: login-destination-ecr
