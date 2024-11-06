@@ -1,0 +1,71 @@
+name: 'Promote ECR Image'
+author: DevOps
+description: 'Promote an ECR Image from one AWS account to another.'
+
+inputs:
+  source-aws-access-key-id:
+    description: 'The source AWS Access key for authentication.'
+    required: true
+  source-aws-secret-access-key:
+    description: 'The source AWS Secret key for authentication.'
+    required: true
+  destination-aws-access-key-id:
+    description: 'The destination AWS Access key for authentication.'
+    required: true
+  destination-aws-secret-access-key:
+    description: 'The destination AWS Secret key for authentication.'
+    required: true
+  ecr-repo-name:
+    description: 'The name of the ECR repository to use and create in the destination account. This is also the image name.'
+    required: true
+  image-tag:
+    description: 'The image tag to pull.'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Authenticate with Source AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.source-aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.source-aws-secret-access-key }}
+        aws-region: us-east-1
+
+    - name: Login to Source AWS ECR
+      id: login-source-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Pull ECR Image
+      id: pull-ecr-image
+      shell: bash
+      run: docker pull ${{ steps.login-source-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:${{ github.sha }}
+
+    - name: Authenticate with Destination AWS
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.destination-aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.destination-aws-secret-access-key }}
+        aws-region: us-east-1
+
+    - name: Login to Destination AWS ECR
+      id: login-destination-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Create ECR Repository
+      shell: bash
+      run: aws ecr create-repository --repository-name ${{ inputs.ecr-repo-name }} || echo "Repository exists already. Skipping creation."
+
+    - name: Tag ECR Image
+      id: tag-ecr-image
+      shell: bash
+      run: |
+        docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:${{ github.sha }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:${{ github.sha }}
+        docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:${{ github.sha }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:latest
+
+    - name: Push ECR Image
+      id: push-ecr-image
+      shell: bash
+      run: |
+        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:latest
+        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ inputs.ecr-repo-name }}:${{ github.sha }}
