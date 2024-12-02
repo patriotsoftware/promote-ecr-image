@@ -54,7 +54,7 @@ runs:
 
     - name: Create ECR Repository
       shell: bash
-      run: aws ecr create-repository --repository-name ${{ inputs.ecr-repo-name }} || echo "Repository exists already. Skipping creation."
+      run: aws ecr create-repository --repository-name ${{ inputs.ecr-repo-name }} --tags Key=repository,Value=${{ inputs.ecr-repo-name }} # || echo "Repository exists already. Skipping creation."
 
     - name: Tag ECR Image
       id: tag-ecr-image
