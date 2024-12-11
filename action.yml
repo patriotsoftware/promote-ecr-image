@@ -28,7 +28,8 @@ inputs:
     required: true
   image-tag:
     description: 'The image tag to pull.'
-    required: true
+    required: false
+    default: ${{ github.sha }}
   tag-latest:
     description: 'Tag the image with the image tag and also latest.'
     required: false
