@@ -29,6 +29,10 @@ inputs:
   image-tag:
     description: 'The image tag to pull.'
     required: true
+  tag-latest:
+    description: 'Tag the image with the image tag and also latest.'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -65,7 +69,7 @@ runs:
     - name: Pull ECR Image
       id: pull-ecr-image
       shell: bash
-      run: docker pull ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ github.sha }}
+      run: docker pull ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }}
 
     - name: Authenticate with Destination AWS
       uses: aws-actions/configure-aws-credentials@v4
@@ -86,12 +90,16 @@ runs:
       id: tag-ecr-image
       shell: bash
       run: |
-        docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ github.sha }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ github.sha }}
-        docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ github.sha }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:latest
+        docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }}
+        if [[ "${{ inputs.tag-latest }}" == "true" ]]; then
+          docker tag ${{ steps.login-source-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }} ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:latest
+        fi
 
     - name: Push ECR Image
       id: push-ecr-image
       shell: bash
       run: |
-        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:latest
-        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ github.sha }}
+        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }}
+        if [[ "${{ inputs.tag-latest }}" == "true" ]]; then
+          docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:latest
+        fi
