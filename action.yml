@@ -99,8 +99,4 @@ runs:
     - name: Push ECR Image
       id: push-ecr-image
       shell: bash
-      run: |
-        docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:${{ inputs.image-tag }}
-        if [[ "${{ inputs.tag-latest }}" == "true" ]]; then
-          docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }}:latest
-        fi
+      run: docker push ${{ steps.login-destination-ecr.outputs.registry }}/${{ steps.ecr-repo-name-prep.outputs.ecr-repo }} --all-tags
